@@ -128,3 +128,10 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# packer hostimage files to ignore
+mysetup.pkrvars.hcl
+authorized_keys
+
+build/
+*.img
