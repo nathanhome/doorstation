@@ -1,0 +1,33 @@
+= Raspberry pi doorstation: MQTT client and WebRTC  
+
+This is a raspberry pi image creation automation project for
+LaserWeb() using 
+
+
+== Raspberry PI host image creation
+It is not a practical solution to open the doorstation each time you want to update the software.
+It is also not comfortable to execute instructions for update manually.
+
+Docker is the proven professional solution to run different images on the same raspberry host.
+To Raspberry Pi image only contains the setup for the devices, the base setup of the host and
+Docker.
+
+The image is pre-build with HashiCorop `packer` and the optional 
+`https://github.com/mkaczanowski/packer-builder-arm`. A prebuild docker setup is
+delivered as VSCode devcontainer. To make it run in VSCode, docker
+
+1. Install the Microsoft-supported VSCode devcontainer extension
+2. Use `STRG-P` and open the devcontainer with "Dev Containers: Rebuild and Reopen in Container"
+
+Then, in the opened termin, run the host image build:
+----
+cd pihostimage
+packer build -var-file="../mysetup.pkrvars.hcl" .
+----
+
+
+Test mounting:
+----
+losetup --find --partscan --show doorstation-pi-arm64.img
+mount -o discard /dev/loop0p1 /media/img
+----

@@ -1,0 +1,6 @@
+== Start nodejs/typescript server project
+
+1. Create project with `package.json`:
+----
+nodejs init --yes
+----
