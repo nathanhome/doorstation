@@ -5,4 +5,5 @@
 #    apt-get update
 
 RUN \
-    apt-get update && apt-get install -y --no-install-recommends ca-certificates nodejs npm
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates nodejs npm && \

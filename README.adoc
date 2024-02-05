@@ -25,9 +25,54 @@ cd pihostimage
 packer build -var-file="../mysetup.pkrvars.hcl" .
 ----
 
-
-Test mounting:
+.Test mounting:
 ----
 losetup --find --partscan --show doorstation-pi-arm64.img
 mount -o discard /dev/loop0p1 /media/img
+----
+
+.Debugging
+Use `-debug' to execute step by step.
+After stop, you can find the mounted sdcard content under `/tmp/<number as shown when /deb/loop is mounted>`
+
+
+
+== Access raspi cam with ffmpeg
+----
+ffmpeg -f video4linux2 -input_format h264 -video_size 1280x720 -framerate 30 -i /dev/video0 -vcodec copy -an test.h264
+ffmpeg -i INPUT.mp4 -codec copy -bsf:v h264_mp4toannexb OUTPUT.ts
+----
+
+
+== VSCODE remote ssh optimisations
+./.vscode-server/data/Machine/settings.json
+----
+{
+    "telemetry.enableTelemetry": false,
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/env": true,
+        "**/venv": true
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/**": true,
+        "**/env/**": true,
+        "**/venv/**": true,
+        "env-*": true
+      },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/.vscode": true,
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/node_modules": true,
+        "venv": true,
+        "*.sublime-*": true,
+        "env*": true
+      }    
+}
 ----
