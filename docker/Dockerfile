@@ -6,4 +6,4 @@
 
 RUN \
     apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates nodejs npm && \
+    apt-get install -y --no-install-recommends ca-certificates nodejs npm ffmpeg libavutil-dev libavcodec-dev libavformat-dev libswresample-dev && \
