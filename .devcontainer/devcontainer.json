@@ -1,8 +1,0 @@
-{
-    "name": "RaspiPacker",
-    "image": "mkaczanowski/packer-builder-arm:1.0.9",
-    "privileged": true,
-    "runArgs": [ "-v", "/dev:/dev" ],
-    "overrideCommand": true,
-    "postStartCommand": "/entrypoint.sh version # as `overrideCommand: true` is needed to get interactive shell, entrypoint still runs"
-}
