@@ -26,7 +26,7 @@ jobs:
       - name: Authenticate to GHCR
         # we use authorisation as providing the image public is not supported by API, so this is more stable
         # but we try to not forget to make the image public by hand
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor 
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Run WebRTC build inside prebuilt container
         run: |
