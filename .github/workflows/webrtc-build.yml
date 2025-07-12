@@ -21,6 +21,13 @@ jobs:
       packages: read  # Needed to pull from GHCR
 
     steps:
+      - name: Free up disk space aggressively
+        run: |
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+          /opt/hostedtoolcache "$AGENT_TOOLSDIRECTORY"
+          df -h
+
       - uses: actions/checkout@v4
 
       - name: Authenticate to GHCR
@@ -45,11 +52,21 @@ jobs:
               gclient sync --with_branch_heads --with_tags &&
               gn gen out/Release --args="is_clang=true target_os=\"linux\" target_cpu=\"arm64\" \\
                 is_debug=false\\
+                use_sysroot=false\\
+                treat_warnings_as_errors=false\\
+                enable_iterator_debugging=false\\
+                use_custom_libcxx=false\\
                 rtc_include_tests=false\\
                 rtc_build_examples=false\\
                 rtc_build_tools=false\\
-                treat_warnings_as_errors=false\\
-                use_custom_libcxx=false\\
+                rtc_use_pipewire=false\\
+                rtc_enable_protobuf=true\\
+                rtc_enable_libevent=false\\
+                rtc_use_x11=false\\
+                rtc_use_gtk=false\\
+                rtc_use_openssl=false\\
+                rtc_use_h264=true\\
+                rtc_use_builtin_ssl_root_certs=true\\
                 clang_base_path=\"${LLVM_DIR}\"" &&
               ninja -C out/Release -j$(nproc)
             '
