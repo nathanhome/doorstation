@@ -1,4 +1,4 @@
-name: Build WebRTC (ARM64 cross-compile)
+name: WebRTC library build for arm64
 
 on:
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
       - name: Fetch WebRTC source
         run: |
           mkdir -p webrtc && cd webrtc
-          fetch --nohooks webrtc
+          fetch --nohooks --tags --prune webrtc
           cd src
           git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
           gclient sync
