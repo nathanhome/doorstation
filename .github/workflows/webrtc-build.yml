@@ -12,71 +12,42 @@ on:
         required: true
         default: '18.1.5'
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    name: Cross-Compile WebRTC with LLVM
+    runs-on: ubuntu-20.04
 
-    env:
-      DEPOT_TOOLS: ${{ github.workspace }}/depot_tools
-      LLVM_VERSION: ${{ inputs.LLVM_VERSION }}
-      WEBRTC_STABLE: ${{ inputs.WEBRTC_STABLE }}
-      LLVM_DIR: ${{ github.workspace }}/llvm
+    permissions:
+      packages: read  # Needed to pull from GHCR
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Run WebRTC build inside prebuilt container
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git curl python3 python-is-python3 python3-venv \
-            pkg-config libx11-dev libpulse-dev
+          docker run --rm \
+            -e LLVM_DIR="/opt/llvm-aarch64" \
+            -v ${{ github.workspace }}:/work \
+            ghcr.io/${{ github.repository_owner }}/depot-arm64-cross:llvm-${{ inputs.LLVM_VERSION }} \
+            bash -c '
+              cd /work &&
+              mkdir -p /tmp/webrtc &&
+              cd /tmp/webrtc &&
+              fetch --nohooks webrtc &&
+              cd webrtc/src &&
+              git fetch origin --tags --prune &&
+              git checkout branch-heads/${WEBRTC_STABLE} -b branch_${WEBRTC_STABLE} &&
+              gclient sync --with_branch_heads --with_tags &&
+              gn gen out/Release --args="is_clang=true target_os=\"linux\" target_cpu=\"arm64\" \\
+                is_debug=false\\
+                rtc_include_tests=false\\
+                rtc_build_examples=false\\
+                rtc_build_tools=false\\
+                treat_warnings_as_errors=false\\
+                use_custom_libcxx=false\\
+                clang_base_path=\"${LLVM_DIR}\"" &&
+              ninja -C out/Release -j$(nproc)
+            '
 
-      - name: Download and extract LLVM aarch64 toolchain
-        run: |
-          mkdir -p $LLVM_DIR
-          curl -sL https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/clang+llvm-${LLVM_VERSION}-aarch64-linux-gnu.tar.xz \
-          | tar -xJ --strip-components=1 -C $LLVM_DIR
-
-      - name: Setup depot_tools
-        run: |
-          git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git $DEPOT_TOOLS
-          echo "$DEPOT_TOOLS" >> $GITHUB_PATH
-
-      - name: Fetch WebRTC source
-        run: |
-          mkdir -p webrtc && cd webrtc
-          fetch --nohooks --tags --prune webrtc
-          cd src
-          git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
-          gclient sync
-
-      - name: Generate build files with GN (cross-compile)
-        run: |
-          cd webrtc/src
-          gn gen out/Release --args="
-            is_clang=true
-            target_os=\"linux\"
-            target_cpu=\"arm64\"
-            is_debug=false
-            rtc_include_tests=false
-            rtc_build_examples=false
-            rtc_build_tools=false
-            use_custom_libcxx=false
-            treat_warnings_as_errors=false
-            clang_base_path=\"${LLVM_DIR}\"
-          "
-
-      - name: Build WebRTC with Ninja
-        run: |
-          cd webrtc/src
-          ninja -C out/Release -j$(nproc)
-
-      - name: Upload compiled WebRTC
+      - name: Upload WebRTC library
         uses: actions/upload-artifact@v4
         with:
-          name: webrtc-${{ inputs.WEBRTC_STABLE }}-llvm-${{ inputs.LLVM_VERSION }}
-          path: |
-            webrtc/src/out/Release/obj/libwebrtc.a
-            webrtc/src  # or only include selected headers
+          name: webrtc-${{ inputs.WEBRTC_STABLE }}
+          path: /tmp/webrtc/webrtc/src/out/Release/obj/libwebrtc.a
