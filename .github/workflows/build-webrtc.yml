@@ -46,7 +46,7 @@ jobs:
 
       - name: Fetch WebRTC source
         run: |
-          mkdir webrtc && cd webrtc
+          mkdir -p webrtc && cd webrtc
           fetch --nohooks webrtc
           cd src
           git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
