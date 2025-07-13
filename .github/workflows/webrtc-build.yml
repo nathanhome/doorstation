@@ -64,6 +64,7 @@ jobs:
               gclient runhooks &&
 
               echo "==> Generating build configuration"
+              mkdir -p out/Release &&
               gn gen out/Release --args="
                 is_clang=true
                 target_os=\"linux\"
