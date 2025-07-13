@@ -50,7 +50,7 @@ jobs:
               git config --global user.email "doorstation@users.noreply.github.com" &&
               git config --global core.autocrlf false &&
               git config --global core.filemode false &&
-              client sync --with_branch_heads --with_tags &&
+              gclient sync --with_branch_heads --with_tags &&
               git fetch &&
               git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE} &&
               gclient sync --with_branch_heads --with_tags &&
