@@ -43,6 +43,7 @@ jobs:
             -v ${{ github.workspace }}:/work \
             ghcr.io/${{ github.repository_owner }}/depot-arm64-cross:llvm-${{ inputs.LLVM_VERSION }} \
             bash -c '
+              env | grep WEBRTC_STABLE
               export PATH="/opt/depot_tools:$PATH"
               export DEPOT_TOOLS_UPDATE=0
               mkdir -p /tmp/webrtc_build &&
@@ -57,7 +58,7 @@ jobs:
               
               echo "==> Checkout stable branch $1"
               cd src
-              git checkout -b branch_$1 branch-heads/$1 &&
+              git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE} &&
 
               echo "==> Running gclient sync with minimal downloads"
               gclient sync --nohooks --no-history --shallow &&
@@ -90,7 +91,7 @@ jobs:
                 symbol_level=0
                 blink_symbol_level=0
                 v8_symbol_level=0
-              " ${WEBRTC_STABLE}
+              " 
 
               echo "==> Building WebRTC"
               ninja -C out/Release -j$(nproc)
