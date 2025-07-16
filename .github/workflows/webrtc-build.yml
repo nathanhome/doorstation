@@ -57,7 +57,7 @@ jobs:
               echo "==> Fetching WebRTC source"
               fetch --nohooks webrtc
               
-              echo "==> Checkout stable branch $1"
+              echo "==> Checkout stable branch ${WEBRTC_STABLE}"
               cd src
               git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE} &&
 
