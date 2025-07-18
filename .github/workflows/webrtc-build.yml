@@ -47,55 +47,55 @@ jobs:
               env | grep LLVM_DIR
               export PATH="/opt/depot_tools:$PATH"
               export DEPOT_TOOLS_UPDATE=0
-              mkdir -p /tmp/webrtc_build &&
-              cd /tmp/webrtc_build &&
-              git config --global user.name "doorstation" &&
-              git config --global user.email "doorstation@users.noreply.github.com" &&
-              git config --global core.autocrlf false &&
-              git config --global core.filemode false &&
-              
+              mkdir -p /tmp/webrtc_build
+              cd /tmp/webrtc_build
+              git config --global user.name "doorstation"
+              git config --global user.email "doorstation@users.noreply.github.com"
+              git config --global core.autocrlf false
+              git config --global core.filemode false
+
               echo "==> Fetching WebRTC source"
+              gclient sync --with_branch_heads --with_tags
               fetch --nohooks webrtc
               
               echo "==> Checkout stable branch ${WEBRTC_STABLE}"
-              cd src
-              git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE} &&
+              cd /tmp/webrtc_build/src
+              git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
 
               echo "==> Running gclient sync with minimal downloads"
-              gclient sync --nohooks --no-history --shallow &&
-              gclient runhooks &&
+              gclient sync  --with_branch_heads --with_tags
 
               echo "==> Generating build configuration"
-              mkdir -p out/Release &&
-              gn gen out/Release --args="
-                is_clang=true
-                target_os=\"linux\"
-                target_cpu=\"arm64\"
-                is_debug=false
-                is_component_build=false
-                use_sysroot=false
-                treat_warnings_as_errors=false
-                enable_iterator_debugging=false
-                use_custom_libcxx=false
-                rtc_include_tests=false
-                rtc_build_examples=false
-                rtc_build_tools=false
-                rtc_use_pipewire=false
-                rtc_enable_protobuf=true
-                rtc_enable_libevent=false
-                rtc_use_x11=false
-                rtc_use_gtk=false
-                rtc_use_openssl=false
-                rtc_use_h264=true
-                rtc_use_builtin_ssl_root_certs=true
-                clang_base_path=\"${LLVM_DIR}\"
-                symbol_level=0
-                blink_symbol_level=0
+              mkdir -p /tmp/webrtc_build/out
+              gn gen /tmp/webrtc_build/out/Release --args=" \
+                is_clang=true \
+                target_os=\"linux\" \
+                target_cpu=\"arm64\" \
+                is_debug=false \
+                is_component_build=false \
+                use_sysroot=false \
+                treat_warnings_as_errors=false \
+                enable_iterator_debugging=false \
+                use_custom_libcxx=false \
+                rtc_include_tests=false \
+                rtc_build_examples=false \
+                rtc_build_tools=false \
+                rtc_use_pipewire=false \
+                rtc_enable_protobuf=true \
+                rtc_enable_libevent=false \
+                rtc_use_x11=false \
+                rtc_use_gtk=false \
+                rtc_use_openssl=false \
+                rtc_use_h264=true \
+                rtc_use_builtin_ssl_root_certs=true \
+                clang_base_path=\"${LLVM_DIR}\" \
+                symbol_level=0 \
+                blink_symbol_level=0 \
                 v8_symbol_level=0
               " 
 
               echo "==> Building WebRTC"
-              ninja -C out/Release -j$(nproc)
+              ninja -C /tmp/webrtc_build/out/Release -j$(nproc)
             '
 
       - name: Upload WebRTC library
