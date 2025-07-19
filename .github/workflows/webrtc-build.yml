@@ -68,8 +68,8 @@ jobs:
               gclient sync  --with_branch_heads --with_tags
 
               echo "==> Generating build configuration"
-              mkdir -p /tmp/webrtc_build/out/Release
-              gn gen /tmp/webrtc_build/out/Release --args=" \
+              mkdir -p out/Release
+              gn gen out/Release --args=" \
                 is_clang=true \
                 target_os=\"linux\" \
                 target_cpu=\"arm64\" \
@@ -97,7 +97,7 @@ jobs:
               " 
 
               echo "==> Building WebRTC"
-              ninja -C /tmp/webrtc_build/out/Release -j$(nproc)
+              ninja -C out/Release -j$(nproc)
             '
 
       - name: Upload WebRTC library
