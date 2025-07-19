@@ -53,6 +53,9 @@ jobs:
               git config --global user.email "doorstation@users.noreply.github.com"
               git config --global core.autocrlf false
               git config --global core.filemode false
+              git config --global fetch.recurseSubmodules false
+              git config --global http.postBuffer 1048576000
+              git config --global core.compression 0
 
               echo "==> Fetching WebRTC source"
               fetch --nohooks webrtc
@@ -60,13 +63,12 @@ jobs:
               echo "==> Checkout stable branch ${WEBRTC_STABLE}"
               cd /tmp/webrtc_build/src
               git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
-              gclient sync --with_branch_heads --with_tags
 
               echo "==> Running gclient sync with minimal downloads"
               gclient sync  --with_branch_heads --with_tags
 
               echo "==> Generating build configuration"
-              mkdir -p /tmp/webrtc_build/out
+              mkdir -p /tmp/webrtc_build/out/Release
               gn gen /tmp/webrtc_build/out/Release --args=" \
                 is_clang=true \
                 target_os=\"linux\" \
