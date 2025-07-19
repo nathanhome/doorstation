@@ -55,12 +55,12 @@ jobs:
               git config --global core.filemode false
 
               echo "==> Fetching WebRTC source"
-              gclient sync --with_branch_heads --with_tags
               fetch --nohooks webrtc
-              
+
               echo "==> Checkout stable branch ${WEBRTC_STABLE}"
               cd /tmp/webrtc_build/src
               git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
+              gclient sync --with_branch_heads --with_tags
 
               echo "==> Running gclient sync with minimal downloads"
               gclient sync  --with_branch_heads --with_tags
