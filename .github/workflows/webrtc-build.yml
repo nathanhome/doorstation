@@ -69,10 +69,10 @@ jobs:
 
               echo "==> Generating build configuration"
               # Ensure depot_tools bootstrap completes
-               gn gen out/Release --args="
+              mkdir -p out/Release
+              gn gen out/Release --args="
                 is_clang=true
                 clang_base_path=\"${LLVM_DIR}\"
-                clang_base_path="/opt/llvm-aarch64"
                 clang_use_chrome_plugins=false
                 use_lld=true
                 target_os=\"linux\"
