@@ -65,7 +65,8 @@ jobs:
               git checkout -b branch_${WEBRTC_STABLE} branch-heads/${WEBRTC_STABLE}
 
               echo "==> Running gclient sync with minimal downloads"
-              gclient sync  --with_branch_heads --with_tags
+              gclient sync --with_branch_heads --with_tags
+              gclient runhooks
 
               echo "==> Generating build configuration"
               # Ensure depot_tools bootstrap completes
