@@ -19,4 +19,6 @@ ENV LLVM_DIR="/opt/llvm-aarch64"
 ENV DEPOT_TOOLS_UPDATE=0
 
 # Install depot_tools
-RUN git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git /opt/depot_tools
+RUN git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git /opt/depot_tools && \
+    cd /opt/depot_tools && \
+    gclient
