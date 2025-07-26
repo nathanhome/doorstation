@@ -6,7 +6,11 @@ on:
       WEBRTC_STABLE:
         description: 'WebRTC branch-head version (e.g. 6422)'
         required: true
-        default: '6422'
+        # see https://chromiumdash.appspot.com/branches for latest stables
+        options:  
+          - 6478
+          - 7204
+        default: '6478'
       LLVM_VERSION:
         description: 'LLVM version (e.g. 18.1.5)'
         required: true
@@ -69,7 +73,7 @@ jobs:
 
               echo "==> Preparing build"
               ./build/install-build-deps.sh --no-android
-              gclient runhooks
+              ensure_bootstrap
 
               echo "==> Generating build configuration"
               # Ensure depot_tools bootstrap completes
