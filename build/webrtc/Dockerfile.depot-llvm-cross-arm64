@@ -1,6 +1,6 @@
 FROM debian:bookworm-slim
 
-ARG LLVM_VERSION=18.1.5
+ARG LLVM_VERSION=18
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install core tools and dependencies
@@ -10,13 +10,17 @@ RUN apt-get update && apt-get install -y \
     # build-dependencies witll install mor etools later, so don't remove the repo lists
     # && rm -rf /var/lib/apt/lists/*
 
-# Download and unpack LLVM toolchain for ARM64
-RUN curl -sL https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/clang+llvm-${LLVM_VERSION}-aarch64-linux-gnu.tar.xz \
-    | tar -xJ -C /opt && \
-    ln -s /opt/clang+llvm-${LLVM_VERSION}-aarch64-linux-gnu /opt/llvm-aarch64
+# Install a selected LLVM compiler version fitting to build runtime arch
+RUN cat <<EOS > /etc/apt/sources.list.d/llvm.list \
+deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main \
+deb-src http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main \
+EOS && \
+    apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 \
+            libc++abi-dev libc++abi1 libclang-dev libclang1 liblldb-dev libllvm-ocaml-dev \
+            libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm python3-clang &&
+    debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks stable sysroot-deb-arm64-stable \
 
-ENV PATH="/opt/llvm-aarch64/bin:/opt/depot_tools:$PATH"
-ENV LLVM_DIR="/opt/llvm-aarch64"
+ENV PATH="/opt/depot_tools:$PATH"
 ENV DEPOT_TOOLS_UPDATE=0
 
 # Install depot_tools

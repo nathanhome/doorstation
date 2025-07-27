@@ -4,9 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       LLVM_VERSION:
-        description: 'LLVM version (e.g. 18.1.5)'
+        description: 'LLVM major version'
         required: true
-        default: '18.1.5'
+        options:
+          - '18'
+          - '20'
+        default: '18'
 
 jobs:
   build-and-push:
