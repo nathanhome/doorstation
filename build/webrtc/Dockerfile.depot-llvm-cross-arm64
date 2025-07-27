@@ -1,24 +1,26 @@
 FROM debian:bookworm-slim
 
-ARG LLVM_VERSION=18
+ARG LLVM_VERSION=19
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install core tools and dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential curl git file python-is-python3 python3 python3-pip \
+    build-essential curl wget git file python-is-python3 python3 python3-pip \
     python3-venv pkg-config ninja-build sudo libx11-dev libpulse-dev ca-certificates lsb-release
     # build-dependencies witll install mor etools later, so don't remove the repo lists
     # && rm -rf /var/lib/apt/lists/*
 
 # Install a selected LLVM compiler version fitting to build runtime arch
-RUN cat <<EOS > /etc/apt/sources.list.d/llvm.list \
-deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main \
-deb-src http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main \
-EOS && \
-    apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 \
-            libc++abi-dev libc++abi1 libclang-dev libclang1 liblldb-dev libllvm-ocaml-dev \
-            libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm python3-clang && \
-    debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks stable sysroot-deb-arm64-stable
+RUN echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main" >> /etc/apt/sources.list \
+    && echo "deb-src http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main" >> /etc/apt/sources.list \
+    && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
+    && apt-get install -y \
+            "libllvm-${LLVM_VERSION}-ocaml-dev" "libllvm${LLVM_VERSION}" "llvm-${LLVM_VERSION}" "llvm-${LLVM_VERSION}-dev" "llvm-${LLVM_VERSION}-runtime" \
+            "clang-${LLVM_VERSION}" "clang-tools-${LLVM_VERSION}" "libclang-common-${LLVM_VERSION}-dev" "libclang-${LLVM_VERSION}-dev" "libclang1-${LLVM_VERSION}" \
+            "clang-format-${LLVM_VERSION}" "python3-clang-${LLVM_VERSION}" "clangd-${LLVM_VERSION}" "clang-tidy-${LLVM_VERSION}" \
+            "lld-${LLVM_VERSION}"  "libc++-${LLVM_VERSION}-dev" "libc++abi-${LLVM_VERSION}-dev" \
+            debootstrap qemu-user-static binfmt-support \
+    && debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks stable sysroot-deb-arm64-stable
 
 ENV PATH="/opt/depot_tools:$PATH"
 ENV DEPOT_TOOLS_UPDATE=0
