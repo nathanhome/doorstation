@@ -12,9 +12,9 @@ on:
           - 7204
         default: '6478'
       LLVM_VERSION:
-        description: 'LLVM version (e.g. 18.1.5)'
+        description: 'LLVM major version'
         required: true
-        default: '18.1.5'
+        default: '19'
 
 
 jobs:
@@ -42,15 +42,20 @@ jobs:
       - name: Run WebRTC build inside prebuilt container
         run: |
           docker run --rm \
-            -e LLVM_DIR="/opt/llvm-aarch64" \
+            -e LLVM_DIR="/opt/llvm" \
             -e WEBRTC_STABLE="${{ inputs.WEBRTC_STABLE }}" \
             -v ${{ github.workspace }}:/work \
             ghcr.io/${{ github.repository_owner }}/depot-arm64-cross:llvm-${{ inputs.LLVM_VERSION }} \
             bash -c '
-              export PATH="/opt/depot_tools:$PATH"
+              export PATH="${LLVM_DIR}:/opt/depot_tools:$PATH"
               env | grep WEBRTC_STABLE
               env | grep LLVM_DIR
               export DEPOT_TOOLS_UPDATE=0
+
+              echo "==> Prepare arm64 sysroot"
+              debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks --foreign stable sysroot-deb-arm64-stable
+
+              echo "==> Prepare webrtc build location"
               mkdir -p /tmp/webrtc_build
               cd /tmp/webrtc_build
               git config --global user.name "doorstation"
@@ -79,7 +84,7 @@ jobs:
               # Ensure depot_tools bootstrap completes
               mkdir -p out/Release
               gn gen out/Release --args="is_clang=true clang_base_path=\"${LLVM_DIR}\" clang_use_chrome_plugins=false
-                use_lld=true target_os=\"linux\" target_cpu=\"arm64\"
+                use_lld=true target_os=\"linux\" target_cpu=\"arm64\" sysroot=\"sysroot-deb-arm64-stable\"
                 is_debug=false enable_iterator_debugging=false is_component_build=false
                 use_sysroot=false treat_warnings_as_errors=false use_custom_libcxx=false
                 rtc_include_tests=false rtc_build_examples=false rtc_build_tools=false
