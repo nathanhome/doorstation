@@ -20,7 +20,7 @@ RUN echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSI
             "clang-format-${LLVM_VERSION}" "python3-clang-${LLVM_VERSION}" "clangd-${LLVM_VERSION}" "clang-tidy-${LLVM_VERSION}" \
             "lld-${LLVM_VERSION}"  "libc++-${LLVM_VERSION}-dev" "libc++abi-${LLVM_VERSION}-dev" \
             debootstrap qemu-user-static binfmt-support \
-    && debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks stable sysroot-deb-arm64-stable
+    && debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks --foreign stable sysroot-deb-arm64-stable
 
 ENV PATH="/opt/depot_tools:$PATH"
 ENV DEPOT_TOOLS_UPDATE=0
