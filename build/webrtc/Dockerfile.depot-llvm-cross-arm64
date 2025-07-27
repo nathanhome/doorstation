@@ -18,7 +18,7 @@ EOS && \
     apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 \
             libc++abi-dev libc++abi1 libclang-dev libclang1 liblldb-dev libllvm-ocaml-dev \
             libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm python3-clang &&
-    debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks stable sysroot-deb-arm64-stable \
+    debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks stable sysroot-deb-arm64-stable
 
 ENV PATH="/opt/depot_tools:$PATH"
 ENV DEPOT_TOOLS_UPDATE=0
