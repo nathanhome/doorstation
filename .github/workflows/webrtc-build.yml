@@ -52,8 +52,8 @@ jobs:
               env | grep LLVM_DIR
               export DEPOT_TOOLS_UPDATE=0
 
-              echo "==> Prepare arm64 sysroot"
-              debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks --foreign stable sysroot-deb-arm64-stable
+              #echo "==> Prepare arm64 sysroot"
+              #debootstrap --arch=arm64 --variant=minbase --include=build-essential,symlinks --foreign stable sysroot-deb-arm64-stable
 
               echo "==> Prepare webrtc build location"
               mkdir -p /tmp/webrtc_build
@@ -76,17 +76,19 @@ jobs:
               echo "==> Running gclient sync with minimal downloads"
               gclient sync --with_branch_heads --with_tags
 
-              echo "==> Preparing build"
-              ./build/install-build-deps.sh --no-android
-              ensure_bootstrap
+              echo "==> Prepare arm54 cross-compile sysroot"
+              python build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
+
+              #./build/install-build-deps.sh --no-android
+              #ensure_bootstrap
 
               echo "==> Generating build configuration"
               # Ensure depot_tools bootstrap completes
               mkdir -p out/Release
               gn gen out/Release --args="is_clang=true clang_base_path=\"${LLVM_DIR}\" clang_use_chrome_plugins=false
-                use_lld=true target_os=\"linux\" target_cpu=\"arm64\" sysroot=\"sysroot-deb-arm64-stable\"
+                use_lld=true target_os=\"linux\" target_cpu=\"arm64\" use_sysroot=true 
                 is_debug=false enable_iterator_debugging=false is_component_build=false
-                use_sysroot=false treat_warnings_as_errors=false use_custom_libcxx=false
+                treat_warnings_as_errors=false use_custom_libcxx=false
                 rtc_include_tests=false rtc_build_examples=false rtc_build_tools=false
                 rtc_use_pipewire=false rtc_enable_protobuf=true rtc_enable_libevent=false 
                 rtc_use_x11=false rtc_build_ssl=false rtc_ssl_root=\"/usr/include/openssl\"
