@@ -76,14 +76,13 @@ jobs:
               echo "==> Running gclient sync with minimal downloads"
               gclient sync --with_branch_heads --with_tags
 
-              echo "==> Prepare arm54 cross-compile sysroot"
-              python build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
-
-              #./build/install-build-deps.sh --no-android
-              #ensure_bootstrap
+              echo "==> Prepare arm64 cross-compile sysroot"
+              python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
+              ./build/install-build-deps.sh --no-prompt --arm
+              export GN_DEFINES="target_os=linux target_cpu=arm64"
+              gclient runhooks
 
               echo "==> Generating build configuration"
-              # Ensure depot_tools bootstrap completes
               mkdir -p out/Release
               gn gen out/Release --args="is_clang=true clang_base_path=\"${LLVM_DIR}\" clang_use_chrome_plugins=false
                 use_lld=true target_os=\"linux\" target_cpu=\"arm64\" use_sysroot=true 
