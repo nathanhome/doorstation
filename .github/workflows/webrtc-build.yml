@@ -59,18 +59,18 @@ jobs:
             lsb-release
           df -h
 
-      - name: Install Clang
-        run: |
-          echo "=== Install clang-${{ env.CLANG_VERSION }} ==="
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{ env.CLANG_VERSION }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
-          sudo apt-get update
-          sudo apt-get install -y clang-${{ env.CLANG_VERSION }} llvm-${{ env.CLANG_VERSION }} lld-${{ env.CLANG_VERSION }}
-          # link default clag to dedicated version
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
-          sudo update-alternatives --install /usr/bin/clang clang++ /usr/bin/clang++-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
-          sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
-          sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+      #- name: Install Clang
+      #  run: |
+      #    echo "=== Install clang-${{ env.CLANG_VERSION }} ==="
+      #    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      #    echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{ env.CLANG_VERSION }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+      #    sudo apt-get update
+      #    sudo apt-get install -y clang-${{ env.CLANG_VERSION }} llvm-${{ env.CLANG_VERSION }} lld-${{ env.CLANG_VERSION }}
+      #    # link default clag to dedicated version
+      #    sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+      #    sudo update-alternatives --install /usr/bin/clang clang++ /usr/bin/clang++-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+      #    sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+      #    sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
 
       - name: Cache depot_tools
         uses: actions/cache@v3
