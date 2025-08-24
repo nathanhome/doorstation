@@ -6,16 +6,24 @@ on:
       WEBRTC_STABLE:
         description: 'WebRTC branch-head version (e.g. 6422)'
         required: true
-        default: '6422'
-      LLVM_VERSION:
-        description: 'LLVM version (e.g. 18.1.5)'
+        # see https://chromiumdash.appspot.com/branches for latest stables
+        options:  
+          - "6778" # m131
+          - "7049" # m135
+          - "258" # m139
+        default: '6778'
+      clang_version:
+        description: 'LLVM major version'
         required: true
-        default: '18.1.5'
+        default: '19'
 
+env:
+  WEBRTC_BRANCH: ${{ github.event.inputs.webrtc_branch }}
+  CLANG_VERSION: ${{ github.event.inputs.custom_clang_version }}
 
 jobs:
-  build:
-    runs-on: ubuntu-20.04
+  build-webrtc-arm64:
+    runs-on: ubuntu-24.04
 
     permissions:
       packages: read  # Needed to pull from GHCR
@@ -23,34 +31,115 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run WebRTC build inside prebuilt container
+      - name: Aggressive cleanup
         run: |
-          docker run --rm \
-            -e LLVM_DIR="/opt/llvm-aarch64" \
-            -v ${{ github.workspace }}:/work \
-            ghcr.io/${{ github.repository_owner }}/depot-arm64-cross:llvm-${{ inputs.LLVM_VERSION }} \
-            bash -c '
-              cd /work &&
-              mkdir -p /tmp/webrtc &&
-              cd /tmp/webrtc &&
-              fetch --nohooks webrtc &&
-              cd webrtc/src &&
-              git fetch origin --tags --prune &&
-              git checkout branch-heads/${WEBRTC_STABLE} -b branch_${WEBRTC_STABLE} &&
-              gclient sync --with_branch_heads --with_tags &&
-              gn gen out/Release --args="is_clang=true target_os=\"linux\" target_cpu=\"arm64\" \\
-                is_debug=false\\
-                rtc_include_tests=false\\
-                rtc_build_examples=false\\
-                rtc_build_tools=false\\
-                treat_warnings_as_errors=false\\
-                use_custom_libcxx=false\\
-                clang_base_path=\"${LLVM_DIR}\"" &&
-              ninja -C out/Release -j$(nproc)
-            '
+          echo "=== Removing large directories ==="
+          # Remove Android SDK (huge)
+          sudo rm -rf /usr/local/lib/android || true        
+          # Remove .NET
+          sudo rm -rf /usr/share/dotnet || true
+          # Remove Haskell
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+          df -h
 
-      - name: Upload WebRTC library
-        uses: actions/upload-artifact@v4
+      - name: Minimal toolset
+        run: |
+          echo "=== Installing minimal dependencies ==="
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            python3 \
+            python3-pip \
+            python-is-python3 \
+            curl \
+            wget \
+            build-essential \
+            pkg-config \
+            lsb-release
+          df -h
+
+      - name: Install Clang
+        run: |
+          echo "=== Install clang-${{ env.CLANG_VERSION }} ==="
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{ env.CLANG_VERSION }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y clang-${{ env.CLANG_VERSION }} llvm-${{ env.CLANG_VERSION }} lld-${{ env.CLANG_VERSION }}
+          # link default clag to dedicated version
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+          sudo update-alternatives --install /usr/bin/clang clang++ /usr/bin/clang++-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+          sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+          sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
+
+      - name: Cache depot_tools
+        uses: actions/cache@v3
         with:
-          name: webrtc-${{ inputs.WEBRTC_STABLE }}
-          path: /tmp/webrtc/webrtc/src/out/Release/obj/libwebrtc.a
+          path: $HOME/depot_tools
+          key: depot-tools-${{ runner.os }}-v2
+
+      - name: Install depot_tools
+        run: |
+          cd $HOME
+          if [[ ! -d "depot_tools" ]]; then
+            echo "=== Installing depot_tools ==="
+            git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth 1
+          fi
+          # Add depot_tools to PATH
+          export PATH="$HOME/depot_tools:$PATH"
+          echo "$HOME/depot_tools" >> $GITHUB_PATH
+
+      - name: Fetch webrtc
+        run: |
+          mkdir -p /tmp/webrtc_build
+          cd /tmp/webrtc_build
+          git config --global user.name "doorstation"
+          git config --global user.email "doorstation@users.noreply.github.com"
+          git config --global core.autocrlf false
+          git config --global core.filemode false
+          git config --global fetch.recurseSubmodules false
+          git config --global http.postBuffer 1048576000
+          git config --global core.compression 0
+          if [[ ! -d "src" ]]; then
+            echo "=== Fetching WebRTC source ==="
+            fetch --nohooks webrtc
+          fi
+      
+      - name: Switch to stable branch
+        run: |
+          echo "=== Checkout ${{ env.WEBRTC_BRANCH }} ==="
+          cd /tmp/webrtc_build/src
+          git checkout -b branch_${{ env.WEBRTC_BRANCH }} branch-heads/${{ env.WEBRTC_BRANCH }}
+          gclient sync --with_branch_heads --with_tags
+
+      - name: arm64 sysroot
+        run: |
+          echo "=== Setting up arm64 sysroot ==="
+          cd /tmp/webrtc_build/src
+          # First, you have to install the packages for the base platform
+          ./build/install-build-deps.sh --no-prompt
+          gclient runhooks
+          # Second, the equivalent arm packages are installed with sysroot
+          # other sequence always only installs i386
+          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
+          # Set environment for target architecture
+          export GN_DEFINES="target_os=linux target_cpu=arm64"
+          echo "GN_DEFINES=target_os=linux target_cpu=arm64" >> $GITHUB_ENV
+
+      - name: cross-compile
+        run: |
+          echo "=== Cross-compiling WebRTC for arm64 ==="
+          cd /tmp/webrtc_build/src
+          mkdir -p out/arm64
+          gn gen out/arm64 --args="is_clang=true clang_base_path=\"/usr/lib/llvm-${{ env.CLANG_VERSION }}\" clang_use_chrome_plugins=false
+            use_lld=true target_os=\"linux\" target_cpu=\"arm64\" use_sysroot=true 
+            is_debug=false enable_iterator_debugging=false is_component_build=false
+            treat_warnings_as_errors=false use_custom_libcxx=false
+            rtc_include_tests=false rtc_build_examples=false rtc_build_tools=false
+            rtc_use_pipewire=false rtc_enable_protobuf=true rtc_enable_libevent=false 
+            rtc_use_x11=false rtc_use_h264=true"
+            # rtc_build_ssl=true rtc_ssl_root=\"/usr/include/openssl\"
+
+          ninja -C out/arm64 -j$(nproc)
+
+      
