@@ -3,7 +3,7 @@ name: WebRTC library build for arm64
 on:
   workflow_dispatch:
     inputs:
-      WEBRTC_STABLE:
+      webrtc_branch:
         description: 'WebRTC branch-head version (e.g. 6422)'
         required: true
         # see https://chromiumdash.appspot.com/branches for latest stables
@@ -12,14 +12,14 @@ on:
           - "7049" # m135
           - "258" # m139
         default: '6778'
-      clang_version:
-        description: 'LLVM major version'
-        required: true
-        default: '19'
+      # clang_version:
+      #  description: 'LLVM major version'
+      #  required: true
+      #  default: '19'
 
 env:
   WEBRTC_BRANCH: ${{ github.event.inputs.webrtc_branch }}
-  CLANG_VERSION: ${{ github.event.inputs.custom_clang_version }}
+  # CLANG_VERSION: ${{ github.event.inputs.custom_clang_version }}
 
 jobs:
   build-webrtc-arm64:
