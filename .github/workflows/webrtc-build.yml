@@ -131,7 +131,7 @@ jobs:
           echo "=== Cross-compiling WebRTC for arm64 ==="
           cd /tmp/webrtc_build/src
           mkdir -p out/arm64
-          gn gen out/arm64 --args="is_clang=true clang_base_path=\"/usr/lib/llvm-${{ env.CLANG_VERSION }}\" clang_use_chrome_plugins=false
+          gn gen out/arm64 --args="is_clang=true use_system_clang=false clang_use_chrome_plugins=false
             use_lld=true target_os=\"linux\" target_cpu=\"arm64\" use_sysroot=true 
             is_debug=false enable_iterator_debugging=false is_component_build=false
             treat_warnings_as_errors=false use_custom_libcxx=false
