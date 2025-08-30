@@ -10,7 +10,7 @@ on:
         options:  
           - "6778" # m131
           - "7049" # m135
-          - "258" # m139
+          - "7204" # m139
         default: '6778'
       # clang_version:
       #  description: 'LLVM major version'
@@ -58,19 +58,6 @@ jobs:
             pkg-config \
             lsb-release
           df -h
-
-      #- name: Install Clang
-      #  run: |
-      #    echo "=== Install clang-${{ env.CLANG_VERSION }} ==="
-      #    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-      #    echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-${{ env.CLANG_VERSION }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
-      #    sudo apt-get update
-      #    sudo apt-get install -y clang-${{ env.CLANG_VERSION }} llvm-${{ env.CLANG_VERSION }} lld-${{ env.CLANG_VERSION }}
-      #    # link default clag to dedicated version
-      #    sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
-      #    sudo update-alternatives --install /usr/bin/clang clang++ /usr/bin/clang++-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
-      #    sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
-      #    sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-${{ env.CLANG_VERSION }} ${{ env.CLANG_VERSION }}0
 
       - name: Cache depot_tools
         uses: actions/cache@v3
@@ -142,4 +129,45 @@ jobs:
 
           ninja -C out/arm64 -j$(nproc)
 
-      
+      - name: pack-webrtc
+        run: |
+          cd /tmp/webrtc/src
+        
+          # add webrtc library in lib
+          mkdir -p out/webrtc-arm64-build/lib
+          cp out/arm64/obj/libwebrtc.a out/webrtc-arm64-build/lib/
+          rm -rf out/arm64/obj
+
+          # add essential includes
+          mkdir -p webrtc-arm64-build/include
+          cp -r api webrtc-arm64-build/include/ 2>/dev/null || echo "api headers not found"
+          cp -r rtc_base webrtc-arm64-build/include/ 2>/dev/null || echo "rtc_base headers not found"
+        
+          # Create a build info
+          cat > out/webrtc-arm64-build/BUILD_INFO.txt << EOF
+          WebRTC ARM64 Build - $(date)
+          Branch: ${{ env.WEBRTC_BRANCH }}
+          Clang: TODO
+          Target: ARM64 Linux + BoringSSL
+        
+          Libraries: $(ls out/webrtc-arm64-build/lib/ | wc -l) files
+          Size: $(du -sh out/webrtc-arm64-build/lib/ | cut -f1)
+          EOF
+        
+          # compressed tarball
+          tar -czf webrtc-arm64-${{ env.WEBRTC_BRANCH }}.tar.gz out/webrtc-arm64-build/
+
+          echo "=== Package info ==="
+          ls -lah webrtc-arm64-*.tar.gz
+          echo "Libraries included:"
+          ls -la webrtc-arm64-build/lib/
+        
+        
+      # Using GitHub Package Registry Generic Packages API
+      - name: Upload to GitHub Package Registry (recommended)
+        run: |       
+          curl -X PUT \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/gzip" \
+            --data-binary @mylib-package.tar.gz \
+            "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/${{ env.WEBRTC_BRANCH }}/webrtc-arm64-${{ env.WEBRTC_BRANCH }}.tar.gz"        
