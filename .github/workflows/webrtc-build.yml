@@ -5,12 +5,13 @@ on:
     inputs:
       # see https://chromiumdash.appspot.com/branches for latest stables
       webrtc_stable_release:
+        type: choice
         description: 'WebRTC stable release'
         required: true
         options:
-        - "m135"
         - "m139"
-        default: 'm135'
+        # - "m135"
+        default: 'm139'
 
 env:
   # translation of supported webrtc stable releases to branches
@@ -172,8 +173,8 @@ jobs:
       - name: Upload to GitHub Package Registry
         run: |
           cd /tmp/webrtc_build/src/out       
-          curl -X PUT \
+          curl -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/gzip" \
+            -H "Accept: application/vnd.github.v3+json" \
             --data-binary @webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz \
-            "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/${{ env.WEBRTC_RELEASE }}/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz"        
+            "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/versions/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz"        
