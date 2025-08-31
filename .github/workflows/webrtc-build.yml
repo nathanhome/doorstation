@@ -172,9 +172,8 @@ jobs:
       # Using GitHub Package Registry Generic Packages API
       - name: Upload to GitHub Package Registry
         run: |
-          cd /tmp/webrtc_build/src/out       
           curl -X POST \
+            -H "Content-Type: multipart/form-data" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            --data-binary @webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz \
+            -F "file=@/tmp/webrtc_build/src/out/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz;type=application/gzip" \
             "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/versions/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz"        
