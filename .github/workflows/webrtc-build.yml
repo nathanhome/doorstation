@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       webrtc_stable_release:
-        description: 'WebRTC branch-head version (e.g. 6422)'
+        description: 'WebRTC stable release'
         required: true
         # see https://chromiumdash.appspot.com/branches for latest stables
         options:  
@@ -23,7 +23,6 @@ env:
   m135: "7049"
   m139: "7204"
   WEBRTC_RELEASE: ${{ github.event.inputs.webrtc_stable_release }}
-  WEBRTC_BRANCH: ${{ env[github.event.inputs.webrtc_stable_release] }}
 
 jobs:
   build-webrtc-arm64:
@@ -34,6 +33,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # map release to stable branch 
+      - run: |
+          echo "WEBRTC_BRANCH=${!WEBRTC_RELEASE}" >> $GITHUB_ENV
 
       - name: Aggressive cleanup
         run: |
@@ -135,7 +138,7 @@ jobs:
 
       - name: pack-webrtc
         run: |
-          cd /tmp/webrtc/src
+          cd /tmp/webrtc_build/src
         
           # add webrtc library in lib
           mkdir -p out/webrtc-arm64-build/lib
@@ -150,8 +153,8 @@ jobs:
           # Create a build info
           cat > out/webrtc-arm64-build/BUILD_INFO.txt << EOF
           WebRTC ARM64 Build - $(date)
-          Branch: ${{ env.WEBRTC_BRANCH }}
           Release: ${{ env.WEBRTC_RELEASE }}
+          Branch: ${{ env.WEBRTC_BRANCH }}
           Clang: TODO
           Target: ARM64 Linux + BoringSSL
         
@@ -160,19 +163,20 @@ jobs:
           EOF
         
           # compressed tarball
-          tar -czf webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz out/webrtc-arm64-build/
+          tar -czf out/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz out/webrtc-arm64-build/
 
           echo "=== Package info ==="
-          ls -lah webrtc-arm64-*.tar.gz
+          ls -lah out/webrtc-arm64-*.tar.gz
           echo "Libraries included:"
           ls -la webrtc-arm64-build/lib/
         
         
       # Using GitHub Package Registry Generic Packages API
       - name: Upload to GitHub Package Registry
-        run: |       
+        run: |
+          cd /tmp/webrtc_build/src/out       
           curl -X PUT \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Content-Type: application/gzip" \
-            --data-binary @mylib-package.tar.gz \
+            --data-binary @webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz \
             "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/${{ env.WEBRTC_RELEASE }}/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz"        
