@@ -165,7 +165,7 @@ jobs:
           echo "=== Package info ==="
           ls -lah out/webrtc-arm64-*.tar.gz
           echo "Libraries included:"
-          ls -la webrtc-arm64-build/lib/
+          ls -la out/webrtc-arm64-build/lib/
         
         
       # Using GitHub Package Registry Generic Packages API
