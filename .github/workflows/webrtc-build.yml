@@ -143,9 +143,9 @@ jobs:
           rm -rf out/arm64/obj
 
           # add essential includes
-          mkdir -p webrtc-arm64-build/include
-          cp -r api webrtc-arm64-build/include/ 2>/dev/null || echo "api headers not found"
-          cp -r rtc_base webrtc-arm64-build/include/ 2>/dev/null || echo "rtc_base headers not found"
+          mkdir -p out/webrtc-arm64-build/include
+          cp -r api out/webrtc-arm64-build/include/ 2>/dev/null || echo "api headers not found"
+          cp -r rtc_base out/webrtc-arm64-build/include/ 2>/dev/null || echo "rtc_base headers not found"
         
           # Create a build info
           cat > out/webrtc-arm64-build/BUILD_INFO.txt << EOF
