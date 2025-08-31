@@ -3,19 +3,14 @@ name: WebRTC library build for arm64
 on:
   workflow_dispatch:
     inputs:
+      # see https://chromiumdash.appspot.com/branches for latest stables
       webrtc_stable_release:
         description: 'WebRTC stable release'
         required: true
-        # see https://chromiumdash.appspot.com/branches for latest stables
-        options:  
-        - "m131"
+        options:
         - "m135"
         - "m139"
         default: 'm135'
-      # clang_version:
-      #  description: 'LLVM major version'
-      #  required: true
-      #  default: '19'
 
 env:
   # translation of supported webrtc stable releases to branches
@@ -115,10 +110,12 @@ jobs:
           gclient runhooks
           # Second, the equivalent arm packages are installed with sysroot
           # other sequence always only installs i386
-          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64 --distro=debian_bookworm
-          # Set environment for target architecture
-          export GN_DEFINES="target_os=linux target_cpu=arm64"
-          echo "GN_DEFINES=target_os=linux target_cpu=arm64" >> $GITHUB_ENV
+          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
+          # Find the installed sysroot
+          SYSROOT_PATH=$(find build/linux -name "*arm64*sysroot" -type d | head -1)
+          echo "Installed sysroot: $SYSROOT_PATH"
+          echo "SYSROOT_PATH=${SYSROOT_PATH}" >> $GITHUB_ENV
+
 
       - name: cross-compile
         run: |
@@ -132,8 +129,8 @@ jobs:
             rtc_include_tests=false rtc_build_examples=false rtc_build_tools=false
             rtc_use_pipewire=false rtc_enable_protobuf=true rtc_enable_libevent=false 
             rtc_use_x11=false rtc_use_h264=true"
-            # rtc_build_ssl=true rtc_ssl_root=\"/usr/include/openssl\"
-
+            extra_cxxflags=[\"-std=c++17\"]
+            # rtc_build_ssl=false rtc_ssl_root=\"${SYSROOT_PATH}/usr\"
           ninja -C out/arm64 -j$(nproc)
 
       - name: pack-webrtc
