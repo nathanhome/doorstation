@@ -115,7 +115,7 @@ jobs:
           gclient runhooks
           # Second, the equivalent arm packages are installed with sysroot
           # other sequence always only installs i386
-          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
+          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64 --distro=debian_bookworm
           # Set environment for target architecture
           export GN_DEFINES="target_os=linux target_cpu=arm64"
           echo "GN_DEFINES=target_os=linux target_cpu=arm64" >> $GITHUB_ENV
