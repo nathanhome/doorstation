@@ -172,7 +172,7 @@ jobs:
       # Using GitHub Package Registry Generic Packages API
       - name: Upload to GitHub Package Registry
         run: |
-          curl -X PUT \
+          curl -X POST \
             -H "Content-Type: application/gzip" \
             --data-binary "@/tmp/webrtc_build/src/out/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz" \
             "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/versions/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz"        
