@@ -40,18 +40,6 @@ jobs:
           echo "PACKAGE_TAG=webrtc-v${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
           echo "PACKAGE_FULLNAME=${{ env.PACKAGE_NAME }}_${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
 
-      - name: Aggressive cleanup
-        run: |
-          echo "=== Removing large directories ==="
-          # Remove Android SDK (huge)
-          sudo rm -rf /usr/local/lib/android || true        
-          # Remove .NET
-          sudo rm -rf /usr/share/dotnet || true
-          # Remove Haskell
-          sudo rm -rf /opt/ghc || true
-          sudo rm -rf /usr/local/.ghcup || true
-          df -h
-
       - name: Minimal toolset
         run: |
           echo "=== Installing minimal dependencies ==="
@@ -90,7 +78,7 @@ jobs:
           # add libraries
           mkdir -p ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
           cp out/arm64/obj/libwebrtc.a ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
-          ls -alF ./${PACKAGE_DIR}/usr/include/webrtc
+          ls -alF ./${PACKAGE_DIR}/usr/lib
 
           # free some space from compilation for header copy
           rm -rf out/arm64/obj
