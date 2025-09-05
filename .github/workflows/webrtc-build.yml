@@ -19,20 +19,26 @@ env:
   m135: "7049"
   m139: "7204"
   WEBRTC_RELEASE: ${{ github.event.inputs.webrtc_stable_release }}
+  PACKAGE_NAME: "libwebrtc-arm64-dev"
+  PACKAGE_VERSION: "1.0.0"
 
 jobs:
   build-webrtc-arm64:
     runs-on: ubuntu-24.04
 
     permissions:
-      packages: read  # Needed to pull from GHCR
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
 
-      # map release to stable branch 
       - run: |
+          # map release to stable branch 
           echo "WEBRTC_BRANCH=${!WEBRTC_RELEASE}" >> $GITHUB_ENV
+          # packaging
+          echo "PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
+          echo "PACKAGE_TAG=webrtc-v${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
+          echo "PACKAGE_FULL_NAME=${{ env.PACKAGE_NAME }}_${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
 
       - name: Aggressive cleanup
         run: |
@@ -134,45 +140,119 @@ jobs:
             # rtc_build_ssl=false rtc_ssl_root=\"${SYSROOT_PATH}/usr\"
           ninja -C out/arm64 -j$(nproc)
 
-      - name: pack-webrtc
+      - name: package-deb
         run: |
+          echo "=== Create .deb package ==="
           cd /tmp/webrtc_build/src
-        
-          # add webrtc library in lib
-          mkdir -p out/webrtc-arm64-build/lib
-          cp out/arm64/obj/libwebrtc.a out/webrtc-arm64-build/lib/
+          PACKAGE_DIR="out/arm64/${PACKAGE_FULL_NAME}"
+
+          # add libraries
+          mkdir -p "${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu"
+          cp out/arm64/obj/libwebrtc.a ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
+
+          # free some space from compilation for header copy
           rm -rf out/arm64/obj
 
           # add essential includes
-          mkdir -p out/webrtc-arm64-build/include
-          cp -r api out/webrtc-arm64-build/include/ 2>/dev/null || echo "api headers not found"
-          cp -r rtc_base out/webrtc-arm64-build/include/ 2>/dev/null || echo "rtc_base headers not found"
-        
-          # Create a build info
-          cat > out/webrtc-arm64-build/BUILD_INFO.txt << EOF
-          WebRTC ARM64 Build - $(date)
-          Release: ${{ env.WEBRTC_RELEASE }}
-          Branch: ${{ env.WEBRTC_BRANCH }}
-          Clang: TODO
-          Target: ARM64 Linux + BoringSSL
-        
-          Libraries: $(ls out/webrtc-arm64-build/lib/ | wc -l) files
-          Size: $(du -sh out/webrtc-arm64-build/lib/ | cut -f1)
-          EOF
-        
-          # compressed tarball
-          tar -czf out/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz out/webrtc-arm64-build/
+          mkdir -p "${PACKAGE_DIR}/usr/include/webrtc"
+          cp -r api ${PACKAGE_DIR}/usr/include/webrtc 2>/dev/null || echo "api headers not found"
+          cp -r rtc_base ${PACKAGE_DIR}/usr/include/webrtc 2>/dev/null || echo "rtc_base headers not found"
 
-          echo "=== Package info ==="
-          ls -lah out/webrtc-arm64-*.tar.gz
-          echo "Libraries included:"
-          ls -la out/webrtc-arm64-build/lib/
-        
-        
-      # Using GitHub Package Registry Generic Packages API
-      - name: Upload to GitHub Package Registry
-        run: |
-          curl -X POST \
-            -H "Content-Type: application/gzip" \
-            --data-binary "@/tmp/webrtc_build/src/out/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz" \
-            "https://uploads.github.com/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/packages/generic/webrtc-arm64/versions/webrtc-arm64-${{ env.WEBRTC_RELEASE }}.tar.gz"        
+          # add deb package control file
+          mkdir -p "${PACKAGE_DIR}/DEBIAN"
+          cat > "${PACKAGE_DIR}/DEBIAN/control" << EOC
+          Package: ${PACKAGE_NAME}
+          Version: ${PACKAGE_VERSION}
+          Architecture: arm64
+          Maintainer: WebRTC Build Bot <nathanhome@users.noreply.github.com>
+          Description: WebRTC development libraries for ARM64 (Raspi 3+)
+           WebRTC (Web Real-Time Communication) is a collection of standards, protocols,
+           and APIs that enable real-time peer-to-peer communication of audio, video,
+           and data in web browsers and mobile applications.
+           .
+           This package contains the static libraries and header files for developing
+           applications with WebRTC on ARM64 architecture e.g. for raspberry pis 3+ or newer.
+          Section: libdevel
+          Priority: optional
+          Depends: libc6, libstdc++6
+          Homepage: https://webrtc.org/
+          EOC          
+
+          # add license (from webrtc original)
+          mkdir -p "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}"
+          cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright" << EOC
+          Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+          Upstream-Name: WebRTC
+          Source: https://webrtc.googlesource.com/src
+          
+          Files: *
+          Copyright: 2011-2024 The WebRTC project authors
+          License: BSD-3-Clause
+          
+          License: BSD-3-Clause
+           Redistribution and use in source and binary forms, with or without
+           modification, are permitted provided that the following conditions are met:
+           .
+           1. Redistributions of source code must retain the above copyright notice,
+              this list of conditions and the following disclaimer.
+           .
+           2. Redistributions in binary form must reproduce the above copyright notice,
+              this list of conditions and the following disclaimer in the documentation
+              and/or other materials provided with the distribution.
+           .
+           3. Neither the name of the copyright holder nor the names of its contributors
+              may be used to endorse or promote products derived from this software
+              without specific prior written permission.
+          EOC
+
+          # Minimal changelog with reference to webrtc change history
+          cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian" << EOL
+          ${PACKAGE_NAME} (${PACKAGE_VERSION}) bookworm; urgency=medium
+          
+            * WebRTC build for release ${{ env.WEBRTC_RELEASE }} => (branch ${{ env.WEBRTC_BRANCH }})
+              see https://chromiumdash.appspot.com/branches for release/branch association
+            * Cross-compiled for ARM64 architecture
+            * minimal features required for a server/device webrtc application
+            * BoringSSL for secure messaging
+            * [Release details](https://webrtc.googlesource.com/src.git/+log/refs/branch-heads/${{ env.WEBRTC_BRANCH }}/)
+          
+           -- WebRTC Build Bot <nathanhome@users.noreply.github.com>  $(date -R)
+          EOL
+          gzip -9 "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian"
+
+          # build .deb package
+          cd out/arm64
+          dpkg-deb --root-owner-group --build "${PACKAGE_NAME_FULL}"
+          
+          # verify the package
+          dpkg-deb --info "${PACKAGE_NAME_FULL}.deb"
+
+      - name: create-release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "${{ env.PACKAGE_TAG }}"
+          name: "WebRTC ${{ env.WEBRTC_RELEASE }} ARM64 (.deb)"
+          body: |
+            WebRTC ${{ env.WEBRTC_RELEASE }} compiled for ARM64 architecture.
+            
+            **Direct installation:**
+            Download and install the .deb package directly:
+            ```bash
+            sudo dpkg -i ${{ env.PACKAGE_NAME_FULL }}.deb
+            sudo apt-get install -f  # Fix any dependency issues
+            ```
+            
+            **APT repository installation:**
+            This package will be added to the APT repository automatically.
+            See the main repository README for APT installation instructions.
+            
+            **Build Info:**
+            - WebRTC Release: ${{ env.WEBRTC_RELEASE }}
+            - Branch: ${{ env.WEBRTC_BRANCH }}
+            - Architecture: ARM64
+            - Target: Debian Bookworm
+            - Built: $(date)
+          files: |
+            /tmp/webrtc_build/src/out/arm64/${{ env.PACKAGE_NAME_FULL }}.deb
+          draft: false
+          prerelease: false
