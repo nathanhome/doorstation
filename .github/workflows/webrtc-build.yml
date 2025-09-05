@@ -69,7 +69,7 @@ jobs:
           df -h
 
       - name: Dummy content
-        id: dummy content
+        id: dummy-content
         run: |
           echo "=== Cross-compiling WebRTC for arm64 ==="
           mkdir -p /tmp/webrtc_build/src/out/arm64/obj
