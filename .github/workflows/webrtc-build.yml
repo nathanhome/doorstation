@@ -68,84 +68,22 @@ jobs:
             lsb-release
           df -h
 
-      - name: Cache depot_tools
-        uses: actions/cache@v3
-        with:
-          path: $HOME/depot_tools
-          key: depot-tools-${{ runner.os }}-v2
-
-      - name: Install depot_tools
-        run: |
-          cd $HOME
-          if [[ ! -d "depot_tools" ]]; then
-            echo "=== Installing depot_tools ==="
-            git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git --depth 1
-          fi
-          # Add depot_tools to PATH
-          export PATH="$HOME/depot_tools:$PATH"
-          echo "$HOME/depot_tools" >> $GITHUB_PATH
-
-      - name: Fetch webrtc
-        run: |
-          mkdir -p /tmp/webrtc_build
-          cd /tmp/webrtc_build
-          git config --global user.name "doorstation"
-          git config --global user.email "doorstation@users.noreply.github.com"
-          git config --global core.autocrlf false
-          git config --global core.filemode false
-          git config --global fetch.recurseSubmodules false
-          git config --global http.postBuffer 1048576000
-          git config --global core.compression 0
-          if [[ ! -d "src" ]]; then
-            echo "=== Fetching WebRTC source ==="
-            fetch --nohooks webrtc
-          fi
-      
-      - name: Switch to stable branch
-        run: |
-          echo "=== Checkout ${{ env.WEBRTC_BRANCH }} ==="
-          cd /tmp/webrtc_build/src
-          git checkout -b branch_${{ env.WEBRTC_BRANCH }} branch-heads/${{ env.WEBRTC_BRANCH }}
-          gclient sync --with_branch_heads --with_tags
-
-      - name: Activate arm64 sysroot
-        id: arm64-sysroot
-        run: |
-          echo "=== Setting up arm64 sysroot ==="
-          cd /tmp/webrtc_build/src
-          # First, you have to install the packages for the base platform
-          ./build/install-build-deps.sh --no-prompt
-          gclient runhooks
-          # Second, the equivalent arm packages are installed with sysroot
-          # other sequence always only installs i386
-          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=arm64
-          # Find the installed sysroot
-          SYSROOT_PATH=$(find build/linux -name "*arm64*sysroot" -type d | head -1)
-          echo "Installed sysroot: $SYSROOT_PATH"
-          echo "SYSROOT_PATH=${SYSROOT_PATH}" >> $GITHUB_ENV
-
-
-      - name: Compile for arm64
-        id: cross-compile
+      - name: Dummy content
+        id: dummy content
         run: |
           echo "=== Cross-compiling WebRTC for arm64 ==="
-          cd /tmp/webrtc_build/src
-          mkdir -p out/arm64
-          gn gen out/arm64 --args="is_clang=true use_system_clang=false clang_use_chrome_plugins=false
-            use_lld=true target_os=\"linux\" target_cpu=\"arm64\" use_sysroot=true 
-            is_debug=false enable_iterator_debugging=false is_component_build=false
-            treat_warnings_as_errors=false use_custom_libcxx=false
-            rtc_include_tests=false rtc_build_examples=false rtc_build_tools=false
-            rtc_use_pipewire=false rtc_enable_protobuf=true rtc_enable_libevent=false 
-            rtc_use_x11=false rtc_use_h264=true"
-            extra_cxxflags=[\"-std=c++17\"]
-            # rtc_build_ssl=false rtc_ssl_root=\"${SYSROOT_PATH}/usr\"
-          ninja -C out/arm64 -j$(nproc)
+          mkdir -p /tmp/webrtc_build/src/out/arm64/obj
+          echo "Hallo1" > /tmp/webrtc_build/src/out/arm64/obj/libwebrtc.a
+          mkdir -p /tmp/webrtc_build/src/api
+          echo "Hallo2" > /tmp/webrtc_build/src/api/testapi.h
+          mkdir -p /tmp/webrtc_build/src/rtc_base
+          echo "Hallo3" > /tmp/webrtc_build/src/rtc_base/testbase.h
 
       - name: Package .deb
         id: package-deb
         run: |
           echo "=== Create .deb package ==="
+          set -x
           cd /tmp/webrtc_build/src
           PACKAGE_DIR="out/arm64/${PACKAGE_FULLNAME}"
 
