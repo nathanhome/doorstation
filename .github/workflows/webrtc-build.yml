@@ -106,9 +106,6 @@ jobs:
           Depends: libc6, libstdc++6
           Homepage: https://webrtc.org/
           EOC
-          
-          ls -alF ./${PACKAGE_DIR}/DEBIAN
-          cat ${PACKAGE_DIR}/DEBIAN/control
 
           # add license (from webrtc original)
           mkdir -p ${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
@@ -138,9 +135,6 @@ jobs:
           EOC
 
           # Minimal changelog with reference to webrtc change history
-          ls -alF ./${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
-          cat ./${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright
-
           cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian" <<EOC
           ${PACKAGE_NAME} (${PACKAGE_VERSION}) bookworm; urgency=medium
           
@@ -182,11 +176,10 @@ jobs:
             See the main repository README for APT installation instructions.
             
             **Build Info:**
-            - WebRTC Release: ${{ env.WEBRTC_RELEASE }}
-            - Branch: ${{ env.WEBRTC_BRANCH }}
+            - Chrome Release: ${{ env.WEBRTC_RELEASE }}
+            - WebRTC Branch: ${{ env.WEBRTC_BRANCH }}
             - Architecture: ARM64
             - Target: Debian Bookworm
-            - Built: $(date)
           files: |
             /tmp/webrtc_build/src/out/arm64/${{ env.PACKAGE_FULLNAME }}.deb
           draft: false
