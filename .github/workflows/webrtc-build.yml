@@ -150,19 +150,22 @@ jobs:
           PACKAGE_DIR="out/arm64/${PACKAGE_FULLNAME}"
 
           # add libraries
-          mkdir -p "${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu"
+          mkdir -p ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
           cp out/arm64/obj/libwebrtc.a ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
+          ls -alF ./${PACKAGE_DIR}/usr/include/webrtc
 
           # free some space from compilation for header copy
           rm -rf out/arm64/obj
 
           # add essential includes
-          mkdir -p "${PACKAGE_DIR}/usr/include/webrtc"
+          mkdir -p ${PACKAGE_DIR}/usr/include/webrtc
           cp -r api ${PACKAGE_DIR}/usr/include/webrtc 2>/dev/null || echo "api headers not found"
           cp -r rtc_base ${PACKAGE_DIR}/usr/include/webrtc 2>/dev/null || echo "rtc_base headers not found"
 
+          ls -alF ./${PACKAGE_DIR}/usr/include/webrtc
+
           # add deb package control file
-          mkdir -p "${PACKAGE_DIR}/DEBIAN"
+          mkdir -p ${PACKAGE_DIR}/DEBIAN
           cat >${PACKAGE_DIR}/DEBIAN/control <<EOC
           Package: ${PACKAGE_NAME}
           Version: ${PACKAGE_VERSION}
@@ -180,6 +183,9 @@ jobs:
           Depends: libc6, libstdc++6
           Homepage: https://webrtc.org/
           EOC          
+          
+          ls -alF ./${PACKAGE_DIR}/DEBIAN
+          cat ${PACKAGE_DIR}/DEBIAN/control
 
           # add license (from webrtc original)
           mkdir -p ${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
@@ -209,7 +215,8 @@ jobs:
           EOC
 
           # Minimal changelog with reference to webrtc change history
-          ls -alF ${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
+          ls -alF ./${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
+          cat ./${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright
 
           cat >${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian <<EOC
           ${PACKAGE_NAME} (${PACKAGE_VERSION}) bookworm; urgency=medium
