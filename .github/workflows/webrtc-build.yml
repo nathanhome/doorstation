@@ -147,7 +147,7 @@ jobs:
         run: |
           echo "=== Create .deb package ==="
           cd /tmp/webrtc_build/src
-          PACKAGE_DIR="out/arm64/${PACKAGE_FULL_NAME}"
+          PACKAGE_DIR="out/arm64/${PACKAGE_FULLNAME}"
 
           # add libraries
           mkdir -p "${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu"
