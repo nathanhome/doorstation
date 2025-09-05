@@ -89,7 +89,7 @@ jobs:
 
           # add deb package control file
           mkdir -p ${PACKAGE_DIR}/DEBIAN
-          cat > ${PACKAGE_DIR}/DEBIAN/control <<EOC
+          cat > "${PACKAGE_DIR}/DEBIAN/control" << EOC
           Package: ${PACKAGE_NAME}
           Version: ${PACKAGE_VERSION}
           Architecture: arm64
