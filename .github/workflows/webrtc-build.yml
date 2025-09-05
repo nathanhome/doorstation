@@ -89,7 +89,7 @@ jobs:
 
           # add deb package control file
           mkdir -p ${PACKAGE_DIR}/DEBIAN
-          cat > "${PACKAGE_DIR}/DEBIAN/control" << EOC
+          cat > "${PACKAGE_DIR}/DEBIAN/control" <<EOC
           Package: ${PACKAGE_NAME}
           Version: ${PACKAGE_VERSION}
           Architecture: arm64
@@ -112,7 +112,7 @@ jobs:
 
           # add license (from webrtc original)
           mkdir -p ${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
-          cat >${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright <<EOC
+          cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright" <<EOC
           Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
           Upstream-Name: WebRTC
           Source: https://webrtc.googlesource.com/src
@@ -141,7 +141,7 @@ jobs:
           ls -alF ./${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
           cat ./${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright
 
-          cat >${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian <<EOC
+          cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian" <<EOC
           ${PACKAGE_NAME} (${PACKAGE_VERSION}) bookworm; urgency=medium
           
             * WebRTC build for release ${{ env.WEBRTC_RELEASE }} => (branch ${{ env.WEBRTC_BRANCH }})
