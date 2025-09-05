@@ -38,7 +38,7 @@ jobs:
           # packaging
           echo "PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
           echo "PACKAGE_TAG=webrtc-v${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
-          echo "PACKAGE_FULL_NAME=${{ env.PACKAGE_NAME }}_${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
+          echo "PACKAGE_FULLNAME=${{ env.PACKAGE_NAME }}_${{ env.PACKAGE_VERSION }}-${{ env.WEBRTC_RELEASE }}" >> $GITHUB_ENV
 
       - name: Aggressive cleanup
         run: |
@@ -108,7 +108,8 @@ jobs:
           git checkout -b branch_${{ env.WEBRTC_BRANCH }} branch-heads/${{ env.WEBRTC_BRANCH }}
           gclient sync --with_branch_heads --with_tags
 
-      - name: arm64 sysroot
+      - name: Activate arm64 sysroot
+        id: arm64-sysroot
         run: |
           echo "=== Setting up arm64 sysroot ==="
           cd /tmp/webrtc_build/src
@@ -124,7 +125,8 @@ jobs:
           echo "SYSROOT_PATH=${SYSROOT_PATH}" >> $GITHUB_ENV
 
 
-      - name: cross-compile
+      - name: Compile for arm64
+        id: cross-compile
         run: |
           echo "=== Cross-compiling WebRTC for arm64 ==="
           cd /tmp/webrtc_build/src
@@ -140,7 +142,8 @@ jobs:
             # rtc_build_ssl=false rtc_ssl_root=\"${SYSROOT_PATH}/usr\"
           ninja -C out/arm64 -j$(nproc)
 
-      - name: package-deb
+      - name: Package .deb
+        id: package-deb
         run: |
           echo "=== Create .deb package ==="
           cd /tmp/webrtc_build/src
@@ -160,7 +163,7 @@ jobs:
 
           # add deb package control file
           mkdir -p "${PACKAGE_DIR}/DEBIAN"
-          cat > "${PACKAGE_DIR}/DEBIAN/control" << EOC
+          cat >${PACKAGE_DIR}/DEBIAN/control <<EOC
           Package: ${PACKAGE_NAME}
           Version: ${PACKAGE_VERSION}
           Architecture: arm64
@@ -179,8 +182,8 @@ jobs:
           EOC          
 
           # add license (from webrtc original)
-          mkdir -p "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}"
-          cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright" << EOC
+          mkdir -p ${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
+          cat >${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/copyright <<EOC
           Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
           Upstream-Name: WebRTC
           Source: https://webrtc.googlesource.com/src
@@ -206,7 +209,9 @@ jobs:
           EOC
 
           # Minimal changelog with reference to webrtc change history
-          cat > "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian" << EOL
+          ls -alF ${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}
+
+          cat >${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian <<EOC
           ${PACKAGE_NAME} (${PACKAGE_VERSION}) bookworm; urgency=medium
           
             * WebRTC build for release ${{ env.WEBRTC_RELEASE }} => (branch ${{ env.WEBRTC_BRANCH }})
@@ -217,15 +222,15 @@ jobs:
             * [Release details](https://webrtc.googlesource.com/src.git/+log/refs/branch-heads/${{ env.WEBRTC_BRANCH }}/)
           
            -- WebRTC Build Bot <nathanhome@users.noreply.github.com>  $(date -R)
-          EOL
+          EOC
           gzip -9 "${PACKAGE_DIR}/usr/share/doc/${PACKAGE_NAME}/changelog.Debian"
 
           # build .deb package
           cd out/arm64
-          dpkg-deb --root-owner-group --build "${PACKAGE_NAME_FULL}"
+          dpkg-deb --root-owner-group --build "${PACKAGE_FULLNAME}"
           
           # verify the package
-          dpkg-deb --info "${PACKAGE_NAME_FULL}.deb"
+          dpkg-deb --info "${PACKAGE_FULLNAME}.deb"
 
       - name: create-release
         uses: softprops/action-gh-release@v1
@@ -238,7 +243,7 @@ jobs:
             **Direct installation:**
             Download and install the .deb package directly:
             ```bash
-            sudo dpkg -i ${{ env.PACKAGE_NAME_FULL }}.deb
+            sudo dpkg -i ${{ env.PACKAGE_FULLNAME }}.deb
             sudo apt-get install -f  # Fix any dependency issues
             ```
             
@@ -253,6 +258,6 @@ jobs:
             - Target: Debian Bookworm
             - Built: $(date)
           files: |
-            /tmp/webrtc_build/src/out/arm64/${{ env.PACKAGE_NAME_FULL }}.deb
+            /tmp/webrtc_build/src/out/arm64/${{ env.PACKAGE_FULLNAME }}.deb
           draft: false
           prerelease: false
