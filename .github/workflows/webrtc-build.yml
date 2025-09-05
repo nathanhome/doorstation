@@ -78,7 +78,6 @@ jobs:
           # add libraries
           mkdir -p ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
           cp out/arm64/obj/libwebrtc.a ${PACKAGE_DIR}/usr/lib/aarch64-linux-gnu
-          ls -alF ./${PACKAGE_DIR}/usr/lib
 
           # free some space from compilation for header copy
           rm -rf out/arm64/obj
@@ -88,11 +87,9 @@ jobs:
           cp -r api ${PACKAGE_DIR}/usr/include/webrtc 2>/dev/null || echo "api headers not found"
           cp -r rtc_base ${PACKAGE_DIR}/usr/include/webrtc 2>/dev/null || echo "rtc_base headers not found"
 
-          ls -alF ./${PACKAGE_DIR}/usr/include/webrtc
-
           # add deb package control file
           mkdir -p ${PACKAGE_DIR}/DEBIAN
-          cat >${PACKAGE_DIR}/DEBIAN/control <<EOC
+          cat > ${PACKAGE_DIR}/DEBIAN/control <<EOC
           Package: ${PACKAGE_NAME}
           Version: ${PACKAGE_VERSION}
           Architecture: arm64
